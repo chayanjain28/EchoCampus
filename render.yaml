@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: echocampus-ai
+    runtime: python
+    pythonVersion: "3.11"
+    buildCommand: "pip install --upgrade pip && pip install --prefer-binary -r requirements.txt"
+    startCommand: "python -m backend.main"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: GEMINI_API_KEY
+        sync: false
