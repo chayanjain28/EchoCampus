@@ -3,13 +3,6 @@ import json
 import re
 
 try:
-    from google import genai as google_genai
-    from google.genai import types as genai_types
-    _USE_NEW_SDK = True
-except ImportError:
-    _USE_NEW_SDK = False
-
-try:
     import google.generativeai as genai_legacy
     _USE_LEGACY_SDK = True
 except ImportError:
@@ -17,31 +10,23 @@ except ImportError:
 
 api_key = os.getenv("GEMINI_API_KEY", "")
 has_api = False
-_client = None
 
-if api_key:
+if api_key and _USE_LEGACY_SDK:
     try:
-        if _USE_NEW_SDK:
-            _client = google_genai.Client(api_key=api_key)
-            has_api = True
-        elif _USE_LEGACY_SDK:
-            genai_legacy.configure(api_key=api_key)
-            has_api = True
+        genai_legacy.configure(api_key=api_key)
+        has_api = True
     except Exception as e:
         print(f"Gemini API config error: {e}")
 
 MODEL_NAME = "gemini-1.5-flash"
 
 def _generate(prompt: str) -> str:
-    """Unified generation wrapper for both SDK versions."""
-    if _USE_NEW_SDK and _client:
-        response = _client.models.generate_content(model=MODEL_NAME, contents=prompt)
-        return response.text
-    elif _USE_LEGACY_SDK:
-        model = genai_legacy.GenerativeModel(MODEL_NAME)
-        response = model.generate_content(prompt)
-        return response.text
-    raise RuntimeError("No Gemini SDK available")
+    """Generate content using Gemini API."""
+    if not has_api or not _USE_LEGACY_SDK:
+        raise RuntimeError("Gemini API not configured")
+    model = genai_legacy.GenerativeModel(MODEL_NAME)
+    response = model.generate_content(prompt)
+    return response.text
 
 def clean_json_response(text: str) -> str:
     """Helper to strip markdown block markers if Gemini wraps JSON."""
